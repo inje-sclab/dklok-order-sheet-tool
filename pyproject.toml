@@ -1,0 +1,15 @@
+[project]
+name = "dklok-order-sheet-tool"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "pdf2image>=1.17.0",
+    "pillow>=11.2.1",
+    "pypdf2>=3.0.1",
+    "pyperclip>=1.9.0",
+    "pyqt5>=5.15.11",
+    "pyqt5-stubs==5.15.6.0",
+    "pytest>=8.4.0",
+    "requests>=2.32.4",
+]
