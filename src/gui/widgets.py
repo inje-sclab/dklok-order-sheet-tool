@@ -123,6 +123,96 @@ class CopyableTableWidget(QTableWidget):
         if self.main_window and hasattr(self.main_window, 'statusBar'):
             self.main_window.statusBar().showMessage(f"'{column_name}' 열 전체({len(column_texts)}개 항목)가 클립보드에 복사되었습니다", 2000)
 
+    def copyTableForExcel(self, include_header=True):
+        """엑셀 호환 형식으로 테이블 전체를 클립보드에 복사"""
+        if self.rowCount() == 0:
+            return
+
+        text_parts = []
+        
+        # 헤더 추가 (선택적)
+        if include_header:
+            headers = []
+            for col in range(self.columnCount()):
+                header_item = self.horizontalHeaderItem(col)
+                if header_item:
+                    headers.append(header_item.text())
+                else:
+                    headers.append(f"열{col+1}")
+            text_parts.append("\t".join(headers))
+
+        # 모든 행 데이터 추가
+        for row in range(self.rowCount()):
+            row_data = []
+            for col in range(self.columnCount()):
+                item = self.item(row, col)
+                if item is not None:
+                    # 엑셀 호환을 위해 특수 문자 처리
+                    cell_text = item.text().replace('\n', ' ').replace('\r', ' ')
+                    row_data.append(cell_text)
+                else:
+                    row_data.append("")
+            text_parts.append("\t".join(row_data))
+
+        # 최종 텍스트 생성 (탭으로 구분, 줄바꿈으로 행 구분)
+        final_text = "\n".join(text_parts)
+        
+        # 클립보드에 복사
+        pyperclip.copy(final_text)
+
+        # 확인 메시지
+        if self.main_window and hasattr(self.main_window, 'statusBar'):
+            row_count = self.rowCount()
+            header_text = "헤더 포함 " if include_header else ""
+            self.main_window.statusBar().showMessage(
+                f"테이블 전체({header_text}{row_count}행)가 엑셀 호환 형식으로 클립보드에 복사되었습니다", 3000
+            )
+
+    def copySelectedAsExcelTable(self):
+        """선택된 영역을 엑셀 호환 형식으로 복사"""
+        selected_items = self.selectedItems()
+        if not selected_items:
+            return
+
+        # 선택된 셀들의 좌표 수집
+        selected_positions = {}
+        for item in selected_items:
+            row, col = item.row(), item.column()
+            if row not in selected_positions:
+                selected_positions[row] = {}
+            selected_positions[row][col] = item.text()
+
+        # 연속된 영역인지 확인하고 정렬
+        rows = sorted(selected_positions.keys())
+        if not rows:
+            return
+
+        cols = set()
+        for row_data in selected_positions.values():
+            cols.update(row_data.keys())
+        cols = sorted(cols)
+
+        # 엑셀 호환 텍스트 생성
+        text_parts = []
+        for row in rows:
+            row_data = []
+            for col in cols:
+                cell_value = selected_positions.get(row, {}).get(col, "")
+                # 엑셀 호환을 위해 특수 문자 처리
+                cell_value = cell_value.replace('\n', ' ').replace('\r', ' ')
+                row_data.append(cell_value)
+            text_parts.append("\t".join(row_data))
+
+        final_text = "\n".join(text_parts)
+        pyperclip.copy(final_text)
+
+        # 확인 메시지
+        if self.main_window and hasattr(self.main_window, 'statusBar'):
+            cell_count = len(selected_items)
+            self.main_window.statusBar().showMessage(
+                f"선택된 영역({cell_count}개 셀)이 엑셀 호환 형식으로 클립보드에 복사되었습니다", 3000
+            )
+
 
 class ColumnHeaderWidget(QWidget):
     """열 헤더와 복사 버튼을 포함하는 위젯"""

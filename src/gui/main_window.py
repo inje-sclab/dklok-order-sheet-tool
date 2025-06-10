@@ -161,11 +161,36 @@ class MainWindow(QMainWindow):
         self.table_widget.setHorizontalHeaderLabels(['품번', '수량'])
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_widget.setAlternatingRowColors(True)
-        self.tab_widget.addTab(self.table_widget, "테이블 보기")
 
         # 테이블 우클릭 컨텍스트 메뉴 추가
         self.table_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table_widget.customContextMenuRequested.connect(self.show_table_context_menu)
+
+        # 테이블 상단에 복사 버튼들 추가
+        table_controls_layout = QHBoxLayout()
+        
+        # 엑셀 복사 버튼
+        self.copy_excel_btn = QPushButton('📋 엑셀용 복사 (헤더포함)')
+        self.copy_excel_btn.setToolTip('테이블 전체를 엑셀에 붙여넣기 가능한 형태로 클립보드에 복사')
+        self.copy_excel_btn.clicked.connect(lambda: self.table_widget.copyTableForExcel(True))
+        
+        # 데이터만 복사 버튼
+        self.copy_data_btn = QPushButton('📋 데이터만 복사')
+        self.copy_data_btn.setToolTip('헤더 없이 데이터만 엑셀 호환 형식으로 복사')
+        self.copy_data_btn.clicked.connect(lambda: self.table_widget.copyTableForExcel(False))
+        
+        table_controls_layout.addWidget(self.copy_excel_btn)
+        table_controls_layout.addWidget(self.copy_data_btn)
+        table_controls_layout.addStretch()
+        
+        # 테이블 컨테이너 위젯 생성
+        table_container = QWidget()
+        table_container_layout = QVBoxLayout(table_container)
+        table_container_layout.setContentsMargins(0, 0, 0, 0)
+        table_container_layout.addLayout(table_controls_layout)
+        table_container_layout.addWidget(self.table_widget)
+        
+        self.tab_widget.addTab(table_container, "테이블 보기")
 
         # JSON 탭
         self.result_text = QTextEdit()
@@ -343,6 +368,16 @@ class MainWindow(QMainWindow):
         copy_all_action = QAction("모두 복사", self)
         copy_all_action.triggered.connect(self.copy_all_rows)
 
+        # 엑셀 호환 복사 옵션들
+        copy_excel_all_action = QAction("📋 엑셀용 전체 복사 (헤더포함)", self)
+        copy_excel_all_action.triggered.connect(lambda: self.table_widget.copyTableForExcel(True))
+        
+        copy_excel_data_action = QAction("📋 엑셀용 데이터만 복사", self)
+        copy_excel_data_action.triggered.connect(lambda: self.table_widget.copyTableForExcel(False))
+        
+        copy_excel_selected_action = QAction("📋 선택영역 엑셀용 복사", self)
+        copy_excel_selected_action.triggered.connect(self.table_widget.copySelectedAsExcelTable)
+
         if self.table_widget.rowCount() > 0:
             context_menu.addAction(copy_selection_action)
             context_menu.addAction(copy_rows_action)
@@ -354,6 +389,13 @@ class MainWindow(QMainWindow):
 
             context_menu.addSeparator()
             context_menu.addAction(copy_all_action)
+            
+            # 엑셀 호환 복사 옵션들 추가
+            context_menu.addSeparator()
+            context_menu.addAction(copy_excel_all_action)
+            context_menu.addAction(copy_excel_data_action)
+            if self.table_widget.selectedItems():
+                context_menu.addAction(copy_excel_selected_action)
 
             context_menu.exec_(self.table_widget.mapToGlobal(pos))
 
